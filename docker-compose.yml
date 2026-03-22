@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    container_name: express-app
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.express.rule=Host(`app.2564.me`)
+      - traefik.http.routers.express.entrypoints=web
+      - traefik.http.services.express.loadbalancer.server.port=3000
+      - traefik.docker.network=proxy
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
