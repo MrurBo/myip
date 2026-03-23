@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
   const ip = getClientIp(req);
 
   if (req.isApiClient) {
-    return res.send(ip);
+    return res.send(ip + "\n");
   }
 
   return res.send(`
