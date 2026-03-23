@@ -1,9 +1,31 @@
 const express = require("express");
 
 const app = express();
+app.set("trust proxy", 3);
+
+const getClientIp = (req) => {
+  return (
+    req.headers['cf-connecting-ip'] ||
+    req.headers['x-forwarded-for']?.split(',')[0] ||
+    req.socket.remoteAddress
+  );
+};
+
+app.use((req, res, next) => {
+  const accept = req.headers.accept || '';
+  const ua = req.headers['user-agent'] || '';
+
+  const wantsJSON = accept.includes('application/json');
+  const looksLikeBrowser = /Mozilla|Chrome|Safari|Firefox|Edge/.test(ua);
+
+  req.isApiClient = wantsJSON || !looksLikeBrowser;
+
+  next();
+});
+
 
 app.get("/", (req, res) => {
-  const ip = req.ip;
+  const ip = getClientIp(req);
 
   if (req.isApiClient) {
     return res.send(ip);
@@ -29,18 +51,6 @@ app.get("/", (req, res) => {
       </body>
     </html>
   `);
-});
-
-app.use((req, res, next) => {
-  const accept = req.headers.accept || '';
-  const ua = req.headers['user-agent'] || '';
-
-  const wantsJSON = accept.includes('application/json');
-  const looksLikeBrowser = /Mozilla|Chrome|Safari|Firefox|Edge/.test(ua);
-
-  req.isApiClient = wantsJSON && !looksLikeBrowser;
-
-  next();
 });
 
 app.listen(3000, "0.0.0.0", () => {});
