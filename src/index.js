@@ -28,6 +28,16 @@ const logger = pino(
   ])
 );
 
+const getClientIp = (req) => {
+  const cfIp = req.headers["cf-connecting-ip"];
+  if (cfIp) return cfIp.trim();
+
+  const xff = req.headers["x-forwarded-for"];
+  if (xff) return xff.split(",")[0].trim();
+
+  return req.socket.remoteAddress;
+};
+
 app.use(pinoHttp({ logger }));
 
 app.set("trust proxy", true);
@@ -50,22 +60,12 @@ const escapeHtml = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-const getClientIp = (req) => {
-  const cfIp = req.headers["cf-connecting-ip"];
-  if (cfIp) return cfIp.trim();
-
-  const xff = req.headers["x-forwarded-for"];
-  if (xff) return xff.split(",")[0].trim();
-
-  return req.socket.remoteAddress;
-};
-
 app.use((req, res, next) => {
   const accept = req.headers.accept || "";
 
   const wantsJSON = accept.includes("application/json");
 
-  req.isApiClient = wantsJSON || !looksLikeBrowser;
+  req.isApiClient = wantsJSON;
 
   next();
 });
