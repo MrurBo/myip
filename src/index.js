@@ -38,16 +38,37 @@ const getClientIp = (req) => {
   return req.socket.remoteAddress;
 };
 
-app.use(pinoHttp({ logger }));
-
 app.set("trust proxy", true);
 
 const limiter = rateLimit({
-  windowMs: 60 * 1000, // 60s
-  limit: 60, // 60 requests per window
+  windowMs: 1000, // 1s
+  limit: 80, // 120 requests per window
   standardHeaders: true, // dunno what this dose
-  legacyHeaders: false,
-  keyGenerator: getClientIp
+  legacyHeaders: false, // dunno what this dose
+  keyGenerator: getClientIp,
+  handler: (req, res) => {
+    if (req.headers.accept?.includes("application/json")) {
+      return res.status(429).json({
+        error: "rate_limited",
+        retry_after: 60
+      });
+    }
+
+    return res.status(429).set('Retry-After', '1').send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Rate Limited</title>
+        </head>
+        <body style="font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;">
+          <div>
+            <h1>Slow down!</h1>
+            <p>You are being rate limited. Try again shortly.</p>
+          </div>
+        </body>
+      </html>
+    `);
+  }
 });
 
 app.use(limiter);
@@ -73,7 +94,7 @@ app.use((req, res, next) => {
 app.get("/", (req, res) => {
   const ip = getClientIp(req);
 
-  req.log.info({ ip, api: req.isApiClient });
+  logger.info({ ip, api: req.isApiClient });
 
   if (req.isApiClient) {
     return res.type("application/json").send(JSON.stringify({ ip }));
