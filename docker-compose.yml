@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./logs/:/app/logs/:rw
+    # ports:
+    #   - 3000:3000
     labels:
       - traefik.enable=true
       - traefik.http.routers.myip.rule=Host(`myip.2564.me`)
