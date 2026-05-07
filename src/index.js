@@ -3,6 +3,7 @@ const pino = require("pino");
 const pinoHttp = require("pino-http");
 const rfs = require("rotating-file-stream");
 const fs = require("fs");
+const rateLimit = require("express-rate-limit");
 
 const app = express();
 
@@ -31,6 +32,16 @@ app.use(pinoHttp({ logger }));
 
 app.set("trust proxy", true);
 
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 60s
+  limit: 60, // 60 requests per window
+  standardHeaders: true, // dunno what this dose
+  legacyHeaders: false,
+  keyGenerator: getClientIp
+});
+
+app.use(limiter);
+
 const escapeHtml = (value) =>
   String(value)
     .replace(/&/g, "&amp;")
@@ -46,7 +57,7 @@ const getClientIp = (req) => {
   const xff = req.headers["x-forwarded-for"];
   if (xff) return xff.split(",")[0].trim();
 
-  return req.socket.remoteAddress || "unknown";
+  return req.socket.remoteAddress;
 };
 
 app.use((req, res, next) => {
