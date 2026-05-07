@@ -3,6 +3,8 @@ services:
     build: .
     container_name: myip
     restart: unless-stopped
+    volumes:
+      - ./logs/:/app/logs/:rw
     labels:
       - traefik.enable=true
       - traefik.http.routers.myip.rule=Host(`myip.2564.me`)

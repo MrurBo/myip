@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:trixie-slim
 
 WORKDIR /app
 
@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 3000
 
-CMD ["node", "src/index.js"]
+CMD ["node", "src/index.js", ">", "/var/log/myip.log"]
