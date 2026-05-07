@@ -14,17 +14,17 @@ fs.mkdirSync(logDir, { recursive: true });
 const stream = rfs.createStream("myip.log", {
   interval: "1d",
   path: logDir,
-  maxFiles: 7
+  maxFiles: 7,
 });
 
 const logger = pino(
   {
     level: "info",
-    timestamp: pino.stdTimeFunctions.isoTime
+    timestamp: pino.stdTimeFunctions.isoTime,
   },
   pino.multistream([
     { stream: process.stdout },
-    { stream }
+    { stream },
   ])
 );
 
@@ -62,10 +62,8 @@ const getClientIp = (req) => {
 
 app.use((req, res, next) => {
   const accept = req.headers.accept || "";
-  const ua = req.headers["user-agent"] || "";
 
   const wantsJSON = accept.includes("application/json");
-  const looksLikeBrowser = /Mozilla|Chrome|Safari|Firefox|Edge/.test(ua);
 
   req.isApiClient = wantsJSON || !looksLikeBrowser;
 
@@ -74,9 +72,13 @@ app.use((req, res, next) => {
 
 app.get("/", (req, res) => {
   const ip = getClientIp(req);
-  const safeIp = escapeHtml(ip);
 
   req.log.info({ ip, api: req.isApiClient });
+
+  if (req.isApiClient) {
+    return res.type("application/json").send(JSON.stringify({ ip }));
+  }
+  const safeIp = escapeHtml(ip);
 
   const footer = `
     <div class="footer">
@@ -85,11 +87,6 @@ app.get("/", (req, res) => {
       <a href="https://github.com/MrurBo" target="_blank">Contact</a>
     </div>
   `;
-
-  if (req.isApiClient) {
-    return res.type("application/json").send(JSON.stringify({ ip }));
-  }
-
   return res.send(`
     <!DOCTYPE html>
     <html>
